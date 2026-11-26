@@ -26,6 +26,7 @@ xcodebuild \
   -quiet build
 
 app="$build_root/DerivedData/Build/Products/Release-iphoneos/DailyHydration.app"
+/usr/bin/plutil -lint "$app/Info.plist"
 /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist"
 /usr/bin/lipo -verify_arch arm64 "$app/DailyHydration"
 test -f "$app/index.html"
