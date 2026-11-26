@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e14">
+  <meta name="description" content="记录今天喝了多少水，以及饮品中的咖啡因。">
+  <meta name="apple-mobile-web-app-title" content="每日饮水">
+  <title>每日饮水</title>
+
+
+
+  <style>
+:root {
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  color: #f3f6ff;
+  background: #0b0e14;
+  --ink: #f3f6ff;
+  --muted: #a9b4ca;
+  --subtle: #8e9bb4;
+  --accent: #a6c4ff;
+  --surface: #121721;
+  --field: #10151e;
+  --line: #293142;
+  --edge: #232b3a;
+  --radius: 24px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse 640px 380px at 46% 0%, #18243988, transparent 74%);
+}
+button, input, select { font: inherit; color: inherit; }
+button, summary { cursor: pointer; }
+button:disabled { cursor: default; }
+a { color: var(--accent); }
+p, h1, h2, dl, dd { margin: 0; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #9bbcff;
+  outline-offset: 3px;
+}
+.shell { max-width: 1040px; padding-inline: 28px; margin-inline: auto; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 79px;
+  border-bottom: 1px solid #1f2633;
+}
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.125rem; letter-spacing: 0.025em; }
+.brand img { border-radius: 13px; box-shadow: 0 5px 18px #247dca39; }
+.nav { display: flex; align-items: center; gap: 3px; background: #0d121c; border: 1px solid var(--edge); border-radius: 15px; padding: 4px; }
+.nav button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.nav button:hover { color: var(--ink); }
+.nav button[aria-current] { color: #cbdcff; background: #26354f; font-weight: 650; }
+.nav-icon { width: 18px; height: 18px; display: inline-block; position: relative; }
+.nav-icon::before, .nav-icon::after { position: absolute; content: ""; }
+.icon-today::before { width: 9px; height: 9px; border: 1.6px solid; border-radius: 1px 70% 70% 70%; transform: rotate(45deg); left: 4px; top: 3px; }
+.icon-history::before { inset: 2px; border: 1.6px solid; border-radius: 50%; }
+.icon-history::after { width: 4px; height: 4px; left: 8px; top: 5px; border-left: 1.6px solid; border-bottom: 1.6px solid; }
+.icon-settings::before { inset: 2px; border: 1.6px dashed; border-radius: 50%; }
+.icon-settings::after { inset: 5px; border: 1.6px solid; border-radius: 50%; }
+
+main { padding-bottom: 40px; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 30px 0 17px; }
+h1 { font-size: clamp(1.7rem, 4.8vw, 2.35rem); line-height: 1.2; letter-spacing: -0.035em; }
+.page-heading p { color: var(--muted); white-space: nowrap; font-size: 0.875rem; }
+h2 { font-size: 1.08rem; line-height: 1.3; }
+.overview { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(0, 1fr); gap: 16px; }
+.water-card, .caffeine-card, .block { border: 1px solid var(--edge); border-radius: var(--radius); }
+.water-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+  min-height: 223px;
+  border-color: #2a415b;
+  background: radial-gradient(ellipse at 99% 35%, #234465bd, transparent 74%), linear-gradient(125deg, #121d2d, #111925);
+}
+.water-card::before, .water-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 380px;
+  height: 131px;
+  right: -72px;
+  bottom: -44px;
+  border: 1px solid #83cafa29;
+  border-radius: 50%;
+  transform: rotate(-24deg);
+}
+.water-card::after { right: -62px; bottom: -66px; border-color: #9bddff20; }
+.water-copy { min-width: 0; }
+.water-copy h2 { font-size: 0.98rem; color: #c7d6ed; font-weight: 650; }
+.water-value { display: flex; gap: 3px 8px; align-items: baseline; flex-wrap: wrap; margin-top: 4px; }
+.water-value strong {
+  color: #f7fbff;
+  font-size: clamp(2.55rem, 7.5vw, 4.15rem);
+  font-weight: 730;
+  line-height: 1.04;
+  letter-spacing: -0.065em;
+  overflow-wrap: anywhere;
+}
+.water-value span, .water-goal { color: #b0c5df; font-size: 0.92rem; }
+.water-goal { margin-top: 8px; }
+.water-left {
+  display: inline-block;
+  margin-top: 12px;
+  border: 1px solid #7fc6fb43;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #c6e9ff;
+  background: #233b50a6;
+  font-size: 0.85rem;
+}
+.water-ring {
+  --progress: 0%;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: clamp(100px, 17vw, 146px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(#9af4ed, #86aeff var(--progress), #303d54 var(--progress));
+  box-shadow: 0 0 0 7px #779dc516, 0 12px 30px #09122262;
+}
+.water-ring::before { position: absolute; content: ""; inset: 8px; z-index: -1; background: radial-gradient(ellipse at 55% 15%, #263b55, #152235 78%); border: 1px solid #6aa4cb23; border-radius: 50%; }
+.water-ring span { font-size: clamp(1.37rem, 3.8vw, 2.25rem); line-height: 1; font-weight: 730; letter-spacing: -0.06em; }
+.water-value strong, .water-ring span, .caffeine-value strong, .summary strong, .entry-volume { font-variant-numeric: tabular-nums; }
+
+.caffeine-card {
+  background: radial-gradient(ellipse at 100% 0%, #4c35273b, transparent 72%), #151820;
+  padding: 26px 27px;
+  border-color: #3a332f;
+}
+.caffeine-top { display: flex; align-items: center; gap: 10px; color: #f3ddd0; }
+.caffeine-top h2 { font-weight: 650; font-size: 0.97rem; }
+.caffeine-symbol { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: #463126; font-size: 1rem; }
+.caffeine-value { margin-top: 9px; color: var(--muted); }
+.caffeine-value strong { font-size: 2.65rem; letter-spacing: -0.06em; color: #ffe6d5; }
+.caffeine-cap { font-size: 0.87rem; }
+.caffeine-track { height: 8px; overflow: hidden; border-radius: 20px; margin-top: 10px; background: #372c29; }
+.caffeine-track div { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #c78261, #f4c08f); }
+.caffeine-track.over div { background: #f98294; }
+.caffeine-note { margin-top: 8px; color: #c2b5b4; font-size: 0.88rem; line-height: 1.5; }
+.text-button { border: 0; background: transparent; color: var(--accent); font-size: 0.91rem; font-weight: 620; min-height: 44px; padding: 0 3px; }
+.text-button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.caffeine-settings { color: #f6be96; }
+
+.block { margin-top: 16px; background: var(--surface); padding: 20px 22px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.section-heading > span { color: var(--muted); font-size: 0.87rem; }
+.drinks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+.drink-button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 10px 2px;
+  background: #191f2c;
+  border: 1px solid #2b3547;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: 620;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.drink-button:hover { background: #233048; border-color: #526a93; }
+.drink-button:active { background: #2e4061; }
+.drink-icon { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 12px; background: #263957; font-size: 1.125rem; font-weight: 650; }
+.drink-icon.tea { background: #293c32; }
+.drink-icon.coffee { background: #473329; }
+.drink-icon.milk { background: #34354e; }
+.drink-icon.juice { background: #49352a; }
+.drink-icon.milkTea { background: #48334a; }
+.drink-icon.beverage, .drink-icon.cola, .drink-icon.energy { background: #413149; }
+.drink-icon.other { background: #30394b; color: #d3def5; }
+.drink-icon.food { background: #48364a; }
+
+.entry-list { list-style: none; display: grid; margin: 8px 0 0; padding: 0; }
+.entry-list li + li { border-top: 1px solid var(--edge); }
+.entry { width: 100%; min-height: 66px; border: 0; border-radius: 10px; padding: 8px 4px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; background: transparent; }
+.entry:hover { background: #192131; }
+.entry-name { font-weight: 650; overflow-wrap: anywhere; }
+.entry-meta { font-size: 0.85rem; color: var(--muted); margin-top: 4px; display: block; }
+.entry-volume { text-align: right; color: #e0edff; font-weight: 680; font-size: 0.93rem; max-width: 9rem; overflow-wrap: anywhere; }
+.empty { text-align: center; margin-top: 11px; border: 1px dashed #2a3447; color: var(--muted); background: #10151f; padding: 18px 10px; border-radius: 13px; font-size: 0.91rem; }
+
+.history-card { margin-top: 0; }
+.date-control { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 10px; max-width: 340px; }
+.date-control input { text-align: center; }
+.icon-button { width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #222b3c; font-size: 1.45rem; line-height: 1; }
+.icon-button:hover:not(:disabled) { background: #2d3950; }
+.icon-button:disabled { opacity: 0.46; }
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+.summary > div { background: #1b2434; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.summary span { font-size: 0.87rem; color: var(--muted); }
+.summary strong { font-size: 1.65rem; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 16px; }
+.settings-card { margin: 0; }
+.settings-card h2 { margin-bottom: 15px; }
+.profile-card, .sources { grid-column: 1 / -1; }
+label { display: block; margin-bottom: 5px; font-size: 0.91rem; font-weight: 600; color: #d3ddf0; }
+input, select {
+  min-width: 0;
+  min-height: 44px;
+  width: 100%;
+  border-radius: 11px;
+  border: 1px solid #3a455c;
+  background: var(--field);
+  padding: 8px 11px;
+  font-size: 1rem;
+}
+select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, #b5c4de 50%), linear-gradient(135deg, #b5c4de 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+input::placeholder { color: var(--subtle); opacity: 1; }
+input[type="date"] { appearance: none; }
+.fields { display: grid; gap: 9px 13px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fields input, .fields select { margin-top: 5px; }
+.profile-card .fields { margin-bottom: 9px; }
+.field-note { font-size: 0.86rem; color: var(--muted); margin-top: 9px; line-height: 1.6; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 15px; border: 0; border-radius: 12px; font-weight: 700; font-size: 0.93rem; }
+.primary { background: #a7c2ff; color: #111d36; }
+.primary:hover { background: #c1d3ff; }
+.secondary { background: #273754; color: #cfe0ff; }
+.secondary:disabled { opacity: 0.55; }
+.delete { color: #ffc4ce; background: #462832; }
+.settings-card .button { margin-top: 12px; }
+.recommendations > div { display: flex; justify-content: space-between; align-items: baseline; gap: 7px; padding: 8px 0; border-bottom: 1px solid var(--edge); }
+.recommendations dt { font-size: 0.91rem; color: var(--muted); }
+.recommendations dd { font-weight: 700; text-align: right; }
+.sources summary { font-size: 0.96rem; font-weight: 650; }
+.sources ul { margin-bottom: 0; padding-left: 19px; line-height: 1.65; color: #bdc8dd; font-size: 0.89rem; }
+.sources li + li { margin-top: 8px; }
+
+dialog { width: min(100% - 24px, 475px); max-height: calc(100% - 20px); padding: 0; border: 1px solid #3b4961; border-radius: 22px; color: var(--ink); background: #171e2a; box-shadow: 0 28px 75px #0009; }
+dialog::backdrop { background: #060911be; }
+.dialog-inner { padding: 16px 20px 21px; }
+.dialog-date { color: var(--muted); font-size: 0.87rem; margin: 1px 0 13px; }
+.dialog-inner > input, .dialog-inner > select, #custom-fields input { margin-bottom: 11px; }
+.close-button { flex: none; }
+.amounts { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 11px; }
+.amounts button { min-height: 44px; padding: 0 10px; background: #26344c; border: 1px solid #3a4a68; border-radius: 9px; font-size: 0.86rem; color: #c9dcff; }
+.amounts button:hover { background: #33496e; }
+.dialog-actions { display: flex; gap: 10px; margin-top: 12px; }
+#save-drink { flex: 1; }
+.toast { position: fixed; z-index: 4; inset: auto 12px 20px; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; padding: 10px 16px; background: #d9e6ff; color: #122343; box-shadow: 0 8px 20px #0005; border-radius: 12px; font-size: 0.91rem; font-weight: 650; }
+.storage-error { font-size: 0.91rem; color: #ffb2be; padding-bottom: 18px; }
+.sr-only { position: absolute; clip: rect(0, 0, 0, 0); width: 1px; height: 1px; overflow: hidden; }
+
+@media (max-width: 780px) {
+  .drinks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 650px) {
+  :root { --radius: 20px; }
+  .shell { padding-inline: 15px; }
+  .header { min-height: 62px; padding-top: env(safe-area-inset-top); }
+  .brand { font-size: 1.03rem; }
+  .brand img { width: 36px; height: 36px; border-radius: 11px; }
+  .nav {
+    position: fixed;
+    z-index: 3;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 5px 14px max(7px, env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: #101621f5;
+    backdrop-filter: blur(14px);
+  }
+  .nav button { flex-direction: column; gap: 3px; min-height: 48px; padding-inline: 4px; font-size: 0.84rem; }
+  main { padding-bottom: calc(73px + env(safe-area-inset-bottom)); }
+  .page-heading { margin: 14px 0 12px; }
+  .overview { grid-template-columns: 1fr; gap: 11px; }
+  .water-card { min-height: 159px; padding: 16px 20px; }
+  .water-goal { margin-top: 5px; }
+  .water-left { margin-top: 8px; }
+  .water-ring { width: clamp(91px, 26vw, 120px); }
+  .water-ring span { font-size: clamp(1.32rem, 5.1vw, 1.85rem); }
+  .caffeine-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 6px; padding: 12px 15px; align-items: center; }
+  .caffeine-value { margin-top: 0; white-space: nowrap; }
+  .caffeine-value strong { font-size: 1.56rem; }
+  .caffeine-top h2 { font-size: 0.9rem; }
+  .caffeine-symbol { width: 30px; height: 30px; border-radius: 9px; }
+  .caffeine-track, .caffeine-note, .caffeine-settings { grid-column: 1 / -1; }
+  .caffeine-track { margin-top: 6px; }
+  .caffeine-note { margin-top: 4px; }
+  .caffeine-settings { justify-self: start; padding-inline: 0; }
+  .block { margin-top: 11px; padding: 14px; }
+  .drinks { gap: 7px; margin-top: 10px; }
+  .drink-button { min-height: 68px; padding: 6px 0; border-radius: 12px; font-size: 0.87rem; gap: 4px; }
+  .drink-icon { width: 31px; height: 31px; border-radius: 10px; font-size: 1.05rem; }
+  .settings-grid { grid-template-columns: 1fr; gap: 11px; }
+  .settings-card { margin: 0; padding: 15px 16px; }
+  .toast { bottom: calc(65px + env(safe-area-inset-bottom)); }
+  dialog { width: 100%; max-width: none; margin: auto 0 0; border-radius: 22px 22px 0 0; border-inline: 0; border-bottom: 0; }
+  .dialog-inner { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .storage-error { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 350px) {
+  .shell { padding-inline: 10px; }
+  .water-card { padding-inline: 15px; }
+  .block, .caffeine-card { padding-inline: 10px; }
+  .entry-volume { max-width: 6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drink-button { transition: none; }
+}
+
+</style>
+</head>
+<body>
+  <header class="shell header">
+    <div class="brand"><img src="data:image/png;base64,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" width="42" height="42" alt=""><span>每日饮水</span></div>
+    <nav class="nav" aria-label="主导航">
+      <button type="button" data-view="today" aria-current="page"><span class="nav-icon icon-today" aria-hidden="true"></span>今日</button>
+      <button type="button" data-view="history"><span class="nav-icon icon-history" aria-hidden="true"></span>历史</button>
+      <button type="button" data-view="settings"><span class="nav-icon icon-settings" aria-hidden="true"></span>设置</button>
+    </nav>
+  </header>
+
+  <main class="shell">
+    <section id="today" aria-labelledby="today-title">
+      <div class="page-heading"><h1 id="today-title">今日饮水</h1><p id="today-date"></p></div>
+      <div class="overview">
+        <article class="water-card">
+          <div class="water-copy">
+            <h2>饮水进度</h2>
+            <p class="water-value"><strong id="water-total">0</strong> <span>mL</span></p>
+            <p class="water-goal">目标 <span id="water-goal">1,600</span> mL</p>
+            <p class="water-left" id="water-left"></p>
+          </div>
+          <div class="water-ring" id="water-ring" role="progressbar" aria-label="饮水进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="water-percent">0%</span>
+          </div>
+        </article>
+        <article class="caffeine-card">
+          <div class="caffeine-top"><span class="caffeine-symbol" aria-hidden="true">☕</span><h2>今日咖啡因</h2></div>
+          <p class="caffeine-value"><strong id="caffeine-total">0</strong> <span>mg</span><span class="caffeine-cap" id="caffeine-cap"></span></p>
+          <div class="caffeine-track" id="caffeine-track" hidden><div id="caffeine-fill"></div></div>
+          <p class="caffeine-note" id="caffeine-note"></p>
+          <button class="text-button caffeine-settings" type="button" data-view="settings" id="caffeine-settings">设置参考上限</button>
+        </article>
+      </div>
+
+      <section class="block quick" aria-labelledby="quick-title">
+        <div class="section-heading"><h2 id="quick-title">记一杯</h2></div>
+        <div class="drinks" id="quick-drinks"></div>
+      </section>
+
+      <section class="block journal" aria-labelledby="journal-title">
+        <div class="section-heading"><h2 id="journal-title">今日记录</h2><span id="today-count"></span></div>
+        <ul class="entry-list" id="today-entries"></ul>
+        <p class="empty" id="today-empty">今天还没有记录。选一种饮品，记下第一杯。</p>
+      </section>
+    </section>
+
+    <section id="history" aria-labelledby="history-title" hidden>
+      <div class="page-heading"><h1 id="history-title">饮水历史</h1></div>
+      <section class="block history-card">
+        <div class="date-control">
+          <button class="icon-button" id="previous-date" type="button" aria-label="前一天">‹</button>
+          <label class="sr-only" for="history-date">选择日期</label>
+          <input id="history-date" type="date">
+          <button class="icon-button" id="next-date" type="button" aria-label="后一天">›</button>
+        </div>
+        <div class="summary">
+          <div><span>饮水量</span><p><strong id="history-water">0</strong> mL</p></div>
+          <div><span>咖啡因</span><p><strong id="history-caffeine">0</strong> mg</p></div>
+        </div>
+        <p class="field-note" id="history-note" hidden></p>
+      </section>
+      <section class="block journal">
+        <div class="section-heading"><h2>当天记录</h2><button class="text-button" type="button" id="add-history">补记饮品</button></div>
+        <ul class="entry-list" id="history-entries"></ul>
+        <p class="empty" id="history-empty">当天没有记录。</p>
+      </section>
+    </section>
+
+    <section id="settings" aria-labelledby="settings-title" hidden>
+      <div class="page-heading"><h1 id="settings-title">设置</h1></div>
+      <div class="settings-grid">
+        <form class="block settings-card" id="goal-form">
+          <h2>每日饮水目标</h2>
+          <label for="goal">目标量（mL）</label>
+          <input id="goal" type="number" inputmode="numeric" min="1" max="10000" step="1" required>
+          <button class="button primary" type="submit">保存目标</button>
+        </form>
+        <section class="block settings-card" aria-labelledby="reference-title">
+          <h2 id="reference-title">推荐参考</h2>
+          <dl class="recommendations">
+            <div><dt>每日饮水量</dt><dd id="recommended-water">—</dd></div>
+            <div><dt>每日咖啡因参考上限</dt><dd id="recommended-caffeine">—</dd></div>
+          </dl>
+          <p class="field-note" id="reference-note">保存个人资料后显示适用的参考值。</p>
+          <button class="button secondary" type="button" id="apply-water" disabled>采用推荐饮水量</button>
+        </section>
+        <form class="block settings-card profile-card" id="profile-form">
+          <h2>个人资料</h2>
+          <div class="fields">
+            <label>年龄（岁）<input id="profile-age" type="number" inputmode="numeric" min="6" max="120" step="1" required></label>
+            <label>性别<select id="profile-sex"><option value="">未选择</option><option value="female">女</option><option value="male">男</option></select></label>
+            <label>身高（cm，选填）<input id="profile-height" type="number" inputmode="decimal" min="50" max="250" step="0.1"></label>
+            <label>体重（kg，选填）<input id="profile-weight" type="number" inputmode="decimal" min="10" max="400" step="0.1"></label>
+          </div>
+          <label for="profile-status">生理或健康情况</label>
+          <select id="profile-status">
+            <option value="usual">一般情况</option>
+            <option value="pregnant">孕期</option>
+            <option value="nursing">哺乳期</option>
+            <option value="restricted">有饮水或咖啡因相关医嘱</option>
+          </select>
+          <p class="field-note">饮水参考按年龄与性别给出。体重仅用于未成年人咖啡因参考计算，身高用于保存资料。</p>
+          <button class="button primary" type="submit">保存资料</button>
+        </form>
+        <details class="block settings-card sources">
+          <summary>计算依据与数据保存</summary>
+          <ul>
+            <li>饮水参考适用于温和气候、低活动量。炎热或大量出汗时，饮水需要随情况调整。 <a href="https://www.ndcpa.gov.cn/jbkzzx/c100040/common/content/content_2104761364364300288.html" target="_blank" rel="noopener noreferrer">国家疾控局</a></li>
+            <li>白水、茶、咖啡和牛奶默认按饮用体积计入。其他饮品可调整计入量。 <a href="https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/" target="_blank" rel="noopener noreferrer">英国 NHS</a></li>
+            <li>咖啡因参考上限适用于全天所有来源。这里的合计取决于记录，估算可用标签或商家数据替换。 <a href="https://www.efsa.europa.eu/en/topics/topic/caffeine" target="_blank" rel="noopener noreferrer">欧洲食品安全局</a> · <a href="https://www.canada.ca/en/health-canada/services/food-nutrition/food-safety/food-additives/caffeine-foods.html" target="_blank" rel="noopener noreferrer">加拿大卫生部</a></li>
+          </ul>
+          <p class="field-note">记录和个人资料保存在这部 iPhone 的 App 中。删除 App 可能会清除记录。</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="drink-dialog" aria-labelledby="drink-title">
+    <form id="drink-form" class="dialog-inner">
+      <div class="section-heading"><h2 id="drink-title">记录饮品</h2><button class="icon-button close-button" type="button" id="close-drink" aria-label="关闭">×</button></div>
+      <p class="dialog-date" id="drink-date"></p>
+      <label for="drink-type">饮品</label>
+      <select id="drink-type"></select>
+      <div id="custom-fields" hidden>
+        <label for="drink-name">饮品名称（选填）</label>
+        <input id="drink-name" type="text" maxlength="32" placeholder="例如，无糖豆浆">
+      </div>
+      <label for="drink-volume">饮用量（mL）</label>
+      <input id="drink-volume" type="number" inputmode="numeric" min="1" max="6000" step="1" required>
+      <div class="amounts" aria-label="常用容量" id="amounts"></div>
+      <div class="fields">
+        <label>计入饮水量（mL）<input id="drink-fluid" type="number" inputmode="numeric" min="0" max="6000" step="1"></label>
+        <label>咖啡因（mg）<input id="drink-caffeine" type="number" inputmode="decimal" min="0" max="10000" step="0.1"></label>
+      </div>
+      <p class="field-note" id="drink-estimate" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button class="button delete" type="button" id="delete-drink" hidden>删除记录</button>
+        <button class="button primary" type="submit" id="save-drink">保存记录</button>
+      </div>
+    </form>
+  </dialog>
+  <div role="status" class="toast" id="toast" hidden></div>
+  <p role="alert" class="storage-error shell" id="storage-error" hidden></p>
+  <script>
+const defaultGoal = 1600;
+
+const drinks = {
+  water: { name: "白水", icon: "💧", amount: 250, fill: 1, caffeine: 0 },
+  tea: { name: "茶", icon: "🍵", amount: 250, fill: 1, caffeine: 40 / 237, method: "用冲泡茶的平均值估算" },
+  coffee: { name: "咖啡", icon: "☕", amount: 200, fill: 1, caffeine: 90 / 200, method: "用过滤咖啡的平均值估算" },
+  milk: { name: "纯牛奶", shortName: "牛奶", icon: "🥛", amount: 250, fill: 1, caffeine: 0 },
+  juice: { name: "果汁", icon: "🍊", amount: 250, fill: 1, caffeine: 0 },
+  milkTea: { name: "奶茶", icon: "🧋", amount: 500, fill: 1, caffeine: null, customName: true },
+  beverage: { name: "饮料", icon: "🥤", amount: 330, fill: 1, caffeine: null, customName: true },
+  cola: { name: "可乐", icon: "🥤", amount: 355, fill: 1, caffeine: 40 / 355, method: "用普通可乐的平均值估算" },
+  energy: { name: "能量饮料", icon: "⚡", amount: 250, fill: 1, caffeine: 80 / 250, method: "用常见能量饮料的平均值估算" },
+  other: { name: "其他饮品", shortName: "其他", icon: "＋", amount: 250, fill: 1, caffeine: null, customName: true },
+  food: { name: "仅记咖啡因", icon: "◇", amount: 0, fill: 0, caffeine: null, customName: true },
+};
+
+function defaults() {
+  return { goal: defaultGoal, profile: null, entries: [] };
+}
+
+function recommendation(profile) {
+  if (!profile) return { water: null, caffeine: null, note: "保存个人资料后显示适用的参考值。" };
+  if (profile.status === "restricted") {
+    return { water: null, caffeine: null, note: "请按医嘱设定饮水目标，并参考医嘱管理咖啡因。" };
+  }
+  if (profile.status === "pregnant" || profile.status === "nursing") {
+    return { water: null, caffeine: 200, note: "孕期或哺乳期的咖啡因参考上限为 200 mg/天。饮水目标可结合个人情况设定。" };
+  }
+  const { age, sex, weight } = profile;
+  const adult = age >= 18;
+  const options = age >= 18 ? [1500, 1700] : age >= 14 ? [1200, 1400] : [1100, 1300];
+  const water = age === 6 ? 800 : age <= 10 ? 1000 : sex === "female" ? options[0] : sex === "male" ? options[1] : null;
+  const caffeine = adult ? 400 : weight != null ? Math.min(400, Math.floor(weight * 2.5)) : null;
+  const notes = [];
+  if (water === null) {
+    notes.push("选择性别后可给出饮水参考。");
+  } else {
+    notes.push(adult ? "饮水参考适用于温和气候、低活动量。" : "饮水参考按年龄段与性别给出。");
+  }
+  if (adult) {
+    notes.push("咖啡因参考上限适用于一般健康成人。");
+  } else {
+    notes.push(caffeine === null ? "填写体重后可估算未成年人的咖啡因参考上限。" : "未成年人按每公斤体重 2.5 mg 估算，且最多采用成人参考上限。");
+  }
+  return { water, caffeine, note: notes.join("") };
+}
+
+function estimateCaffeine(type, volume) {
+  const rate = drinks[type].caffeine;
+  if (rate === null || !Number.isFinite(volume)) return null;
+  return Math.round(rate * volume);
+}
+
+function totalFor(entries, date) {
+  const records = entries.filter(entry => entry.date === date).sort((a, b) => b.added - a.added);
+  let water = 0;
+  let caffeine = 0;
+  let unknown = 0;
+  let estimated = false;
+  for (const record of records) {
+    water += record.fluid;
+    if (record.caffeine === null) unknown += 1;
+    else caffeine += record.caffeine;
+    if (record.estimated) estimated = true;
+  }
+  return { records, water, caffeine: Math.round(caffeine * 10) / 10, unknown, estimated };
+}
+
+function dateKey(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function fromDateKey(key) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+function shiftDate(key, amount) {
+  const day = fromDateKey(key);
+  day.setDate(day.getDate() + amount);
+  return dateKey(day);
+}
+
+
+const $ = id => document.getElementById(id);
+const format = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 });
+const dateFormat = new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" });
+const timeFormat = new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+function readNativeData() {
+  const snapshot = window.hydrationInitialBase64;
+  if (snapshot == null) return null;
+  return new TextDecoder().decode(Uint8Array.from(atob(snapshot), byte => byte.charCodeAt(0)));
+}
+
+
+const state = load();
+const drinkDialog = $("drink-dialog");
+let view = "today";
+let today = dateKey();
+let historyDate = today;
+let activeRecord = null;
+let entryDate = today;
+let toastTimer;
+
+function showStorageError(message) {
+  $("storage-error").textContent = message;
+  $("storage-error").hidden = false;
+  if (document.getElementById("drink-dialog").open) {
+    $("drink-estimate").textContent = message;
+  }
+}
+
+function load() {
+  try {
+    const raw = readNativeData();
+    if (!raw) return defaults();
+    const data = JSON.parse(raw);
+    if (!Number.isInteger(data.goal) || data.goal <= 0 || !Array.isArray(data.entries)) throw new Error("Invalid storage");
+    return data;
+  } catch {
+    showStorageError("读取本机记录失败。请重开 App 后再试。");
+    return { ...defaults(), readFailed: true };
+  }
+}
+
+let saveInProgress = false;
+
+async function save(patch) {
+  if (saveInProgress) return false;
+  saveInProgress = true;
+  try {
+    if (state.readFailed) throw new Error("Read failed");
+    await window.webkit.messageHandlers.hydration.postMessage(JSON.stringify({ ...state, ...patch }));
+    Object.assign(state, patch);
+    $("storage-error").hidden = true;
+    return true;
+  } catch {
+    showStorageError("保存失败，请重试。");
+    return false;
+  } finally {
+    saveInProgress = false;
+  }
+}
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  $("toast").textContent = message;
+  $("toast").hidden = false;
+  toastTimer = setTimeout(() => { $("toast").hidden = true; }, 2200);
+}
+
+function makeIcon(key) {
+  const icon = document.createElement("span");
+  icon.className = "drink-icon " + key;
+  icon.textContent = drinks[key].icon;
+  icon.setAttribute("aria-hidden", "true");
+  return icon;
+}
+
+function caffeineLabel(value, estimated) {
+  return (estimated ? "≈" : "") + format.format(value);
+}
+
+function renderEntries(listName, emptyName, records) {
+  const list = $(listName);
+  list.replaceChildren();
+  $(emptyName).hidden = records.length > 0;
+  for (const record of records) {
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "entry";
+    const body = document.createElement("span");
+    const name = document.createElement("span");
+    name.className = "entry-name";
+    name.textContent = record.name || drinks[record.type].name;
+    const meta = document.createElement("span");
+    meta.className = "entry-meta";
+    const time = record.time ? timeFormat.format(record.added) : "补记";
+    const caf = record.caffeine === null ? "咖啡因未填" : "咖啡因 " + caffeineLabel(record.caffeine, record.estimated) + " mg";
+    meta.textContent = time + " · " + caf;
+    const milliliters = document.createElement("span");
+    milliliters.className = "entry-volume";
+    if (record.type !== "food") {
+      milliliters.textContent = record.volume === record.fluid
+        ? format.format(record.fluid) + " mL"
+        : format.format(record.volume) + " mL · 计入 " + format.format(record.fluid);
+    }
+    body.append(name, meta);
+    button.append(makeIcon(record.type), body, milliliters);
+    button.addEventListener("click", () => openDrink(record.type, record.date, record));
+    li.append(button);
+    list.append(li);
+  }
+}
+
+function renderToday() {
+  const totals = totalFor(state.entries, today);
+  const percent = Math.floor(totals.water / state.goal * 100);
+  const capped = Math.min(percent, 100);
+  const remaining = Math.max(0, state.goal - totals.water);
+  const limit = recommendation(state.profile).caffeine;
+  $("today-date").textContent = dateFormat.format(fromDateKey(today));
+  $("water-total").textContent = format.format(totals.water);
+  $("water-goal").textContent = format.format(state.goal);
+  $("water-left").textContent = remaining > 0 ? "还差 " + format.format(remaining) + " mL" : "已达到今天的目标";
+  $("water-percent").textContent = format.format(percent) + "%";
+  $("water-ring").style.setProperty("--progress", capped + "%");
+  $("water-ring").setAttribute("aria-valuenow", String(capped));
+  $("water-ring").setAttribute("aria-valuetext", percent + "%");
+
+  $("caffeine-total").textContent = caffeineLabel(totals.caffeine, totals.estimated);
+  $("caffeine-cap").textContent = limit === null ? "" : " / " + format.format(limit) + " mg";
+  $("caffeine-track").hidden = limit === null;
+  $("caffeine-settings").hidden = limit !== null;
+  const notes = [];
+  if (limit !== null) {
+    const difference = totals.caffeine - limit;
+    $("caffeine-track").classList.toggle("over", difference > 0);
+    $("caffeine-fill").style.width = Math.min(100, totals.caffeine / limit * 100) + "%";
+    if (difference > 0) notes.push("超过日参考上限 " + format.format(difference) + " mg");
+    else if (difference === 0) notes.push("已达到日参考上限");
+    else notes.push("日参考上限 " + format.format(limit) + " mg");
+  }
+  if (totals.unknown > 0) notes.push(totals.unknown + " 条记录的咖啡因未计入");
+  $("caffeine-note").textContent = notes.join(" · ");
+  $("caffeine-note").hidden = notes.length === 0;
+
+  $("today-count").textContent = totals.records.length + " 条";
+  renderEntries("today-entries", "today-empty", totals.records);
+}
+
+function renderHistory() {
+  const totals = totalFor(state.entries, historyDate);
+  $("history-date").value = historyDate;
+  $("history-date").max = today;
+  $("next-date").disabled = historyDate >= today;
+  $("history-water").textContent = format.format(totals.water);
+  $("history-caffeine").textContent = caffeineLabel(totals.caffeine, totals.estimated);
+  $("history-note").hidden = totals.unknown === 0;
+  $("history-note").textContent = totals.unknown + " 条记录的咖啡因未计入";
+  renderEntries("history-entries", "history-empty", totals.records);
+}
+
+function renderReference() {
+  const reference = recommendation(state.profile);
+  $("recommended-water").textContent = reference.water === null ? "—" : format.format(reference.water) + " mL";
+  $("recommended-caffeine").textContent = reference.caffeine === null ? "—" : format.format(reference.caffeine) + " mg";
+  $("reference-note").textContent = reference.note;
+  $("apply-water").disabled = reference.water === null || reference.water === state.goal;
+}
+
+function setView(next) {
+  if (view === next) return;
+  view = next;
+  for (const section of ["today", "history", "settings"]) $(section).hidden = section !== view;
+  for (const button of document.querySelectorAll(".nav button")) {
+    if (button.dataset.view === view) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  }
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  renderToday();
+  renderHistory();
+  renderReference();
+}
+
+function refreshDay() {
+  const current = dateKey();
+  if (current === today) return;
+  if (historyDate === today || historyDate > current) historyDate = current;
+  today = current;
+  render();
+}
+
+function readNumber(id) {
+  const input = $(id);
+  return input.value === "" ? null : input.valueAsNumber;
+}
+
+function updateDrinkPreview() {
+  const key = $("drink-type").value;
+  const drink = drinks[key];
+  const onlyCaffeine = key === "food";
+  const volume = onlyCaffeine ? 0 : readNumber("drink-volume");
+  const defaultFluid = volume === null ? null : Math.round(volume * drink.fill);
+  const estimate = volume === null ? null : estimateCaffeine(key, volume);
+  $("custom-fields").hidden = !drink.customName;
+  $("drink-name").placeholder = key === "milkTea" ? "例如，茉莉奶茶" : key === "beverage" ? "例如，柠檬汽水" : "例如，无糖豆浆";
+  $("drink-volume").disabled = onlyCaffeine;
+  $("drink-fluid").disabled = onlyCaffeine;
+  $("amounts").hidden = onlyCaffeine;
+  $("drink-caffeine").required = onlyCaffeine;
+  $("drink-fluid").placeholder = defaultFluid === null ? "按饮用量" : String(defaultFluid);
+  $("drink-caffeine").placeholder = estimate === null ? "选填" : String(estimate);
+  $("drink-fluid").setCustomValidity("");
+  if (!onlyCaffeine && volume !== null) {
+    const fluid = readNumber("drink-fluid");
+    if (fluid !== null && fluid > volume) $("drink-fluid").setCustomValidity("计入饮水量不能大于饮用量。");
+  }
+  let message = "计入量默认按饮用量填写，可手动修改。";
+  if (onlyCaffeine) {
+    message = "适用于巧克力、咖啡因补充剂等，按已知的咖啡因含量填写。";
+  } else if (drink.method && estimate !== null) {
+    message = drink.method + "（约 " + estimate + " mg）。有产品标注时可手动输入。";
+  } else if (drink.caffeine === null) {
+    message = "咖啡因可按标签或商家标注填写，留空时标记为未计入。";
+  }
+  $("drink-estimate").textContent = message;
+}
+
+function openDrink(key, day, record = null) {
+  if (drinkDialog.open) return;
+  activeRecord = record;
+  entryDate = day;
+  $("drink-title").textContent = record ? "编辑记录" : "记录饮品";
+  $("drink-date").textContent = dateFormat.format(fromDateKey(entryDate));
+  $("delete-drink").hidden = !record;
+  $("delete-drink").textContent = "删除记录";
+  $("drink-type").value = key;
+  $("drink-name").value = record?.name || "";
+  $("drink-volume").value = key === "food" ? "" : record?.volume ?? drinks[key].amount;
+  $("drink-fluid").value = record?.customFluid ? record.fluid : "";
+  $("drink-caffeine").value = record && !record.estimated ? record.caffeine ?? "" : "";
+  updateDrinkPreview();
+  drinkDialog.showModal();
+}
+
+function resetDrinkType() {
+  const key = $("drink-type").value;
+  $("drink-volume").value = drinks[key].amount || "";
+  $("drink-fluid").value = "";
+  $("drink-caffeine").value = "";
+  $("drink-name").value = "";
+  updateDrinkPreview();
+}
+
+function setupDrinks() {
+  for (const key of ["water", "tea", "coffee", "milk", "juice", "milkTea", "beverage", "other"]) {
+    const button = document.createElement("button");
+    const label = document.createElement("span");
+    label.textContent = drinks[key].shortName || drinks[key].name;
+    button.type = "button";
+    button.className = "drink-button";
+    button.append(makeIcon(key), label);
+    button.addEventListener("click", () => {
+      refreshDay();
+      openDrink(key, today);
+    });
+    $("quick-drinks").append(button);
+  }
+  for (const [key, drink] of Object.entries(drinks)) {
+    $("drink-type").add(new Option(drink.name, key));
+  }
+  for (const amount of [150, 250, 350, 500]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = amount + " mL";
+    button.addEventListener("click", () => {
+      $("drink-volume").value = amount;
+      updateDrinkPreview();
+    });
+    $("amounts").append(button);
+  }
+}
+
+function populateSettings() {
+  const p = state.profile;
+  $("goal").value = state.goal;
+  $("profile-age").value = p?.age ?? "";
+  $("profile-sex").value = p?.sex ?? "";
+  $("profile-height").value = p?.height ?? "";
+  $("profile-weight").value = p?.weight ?? "";
+  $("profile-status").value = p?.status ?? "usual";
+}
+
+for (const button of document.querySelectorAll("[data-view]")) {
+  button.addEventListener("click", () => {
+    refreshDay();
+    setView(button.dataset.view);
+  });
+}
+
+$("goal-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (await save({ goal: readNumber("goal") })) {
+    render();
+    showToast("饮水目标已保存");
+  }
+});
+
+$("profile-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const profile = {
+    age: readNumber("profile-age"),
+    sex: $("profile-sex").value,
+    height: readNumber("profile-height"),
+    weight: readNumber("profile-weight"),
+    status: $("profile-status").value,
+  };
+  if (await save({ profile })) {
+    render();
+    showToast("资料已保存，参考值已更新");
+  }
+});
+
+$("apply-water").addEventListener("click", async () => {
+  const goal = recommendation(state.profile).water;
+  if (goal !== null && await save({ goal })) {
+    $("goal").value = goal;
+    render();
+    showToast("已采用推荐饮水量");
+  }
+});
+
+$("history-date").addEventListener("change", () => {
+  const input = $("history-date");
+  if (input.validity.valid && input.value) historyDate = input.value;
+  renderHistory();
+});
+$("previous-date").addEventListener("click", () => {
+  historyDate = shiftDate(historyDate, -1);
+  renderHistory();
+});
+$("next-date").addEventListener("click", () => {
+  if (historyDate < today) historyDate = shiftDate(historyDate, 1);
+  renderHistory();
+});
+$("add-history").addEventListener("click", () => openDrink("water", historyDate));
+
+$("drink-type").addEventListener("change", resetDrinkType);
+$("drink-volume").addEventListener("input", updateDrinkPreview);
+$("drink-fluid").addEventListener("input", updateDrinkPreview);
+$("close-drink").addEventListener("click", () => drinkDialog.close());
+$("drink-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const type = $("drink-type").value;
+  const volume = type === "food" ? 0 : readNumber("drink-volume");
+  const fluidInput = type === "food" ? null : readNumber("drink-fluid");
+  const manualCaffeine = readNumber("drink-caffeine");
+  const caffeine = manualCaffeine ?? estimateCaffeine(type, volume);
+  const added = activeRecord?.added ?? Date.now();
+  const record = {
+    id: activeRecord?.id ?? (globalThis.crypto?.randomUUID?.() || String(added) + Math.random()),
+    date: entryDate,
+    added,
+    time: activeRecord?.time ?? (entryDate === dateKey()),
+    type,
+    name: drinks[type].customName ? $("drink-name").value.trim() : "",
+    volume,
+    fluid: fluidInput ?? Math.round(volume * drinks[type].fill),
+    customFluid: fluidInput !== null,
+    caffeine,
+    estimated: manualCaffeine === null && caffeine > 0,
+  };
+  const entries = activeRecord
+    ? state.entries.map(entry => entry.id === record.id ? record : entry)
+    : [...state.entries, record];
+  if (await save({ entries })) {
+    const message = activeRecord ? "记录已更新" : "已记录";
+    drinkDialog.close();
+    render();
+    showToast(message);
+  }
+});
+$("delete-drink").addEventListener("click", async () => {
+  const button = $("delete-drink");
+  if (!activeRecord) return;
+  if (button.textContent === "删除记录") {
+    button.textContent = "确认删除";
+    return;
+  }
+  if (await save({ entries: state.entries.filter(entry => entry.id !== activeRecord.id) })) {
+    drinkDialog.close();
+    render();
+    showToast("记录已删除");
+  }
+});
+window.addEventListener("focus", refreshDay);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshDay();
+});
+setInterval(refreshDay, 30000);
+
+setupDrinks();
+populateSettings();
+render();
+
+
+</script>
+</body>
+</html>

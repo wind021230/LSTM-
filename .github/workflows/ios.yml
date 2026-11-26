@@ -1,0 +1,31 @@
+name: Build iPhone IPA
+
+on:
+  push:
+    branches: [daily-hydration-ios]
+    paths:
+      - 'DailyHydration/**'
+      - 'DailyHydration.xcodeproj/**'
+      - 'build-ipa.sh'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Check out app source
+        uses: actions/checkout@v4
+      - name: Build the iPhone installation package
+        run: bash ./build-ipa.sh
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: DailyHydration-iPhone
+          path: artifacts/DailyHydration.ipa
+          if-no-files-found: error
+          retention-days: 14
